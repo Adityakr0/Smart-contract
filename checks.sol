@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity ^0.8.10;
 
-contract errorHandling_vottingSystem {
+contract ErrorHandlingVotingSystem {
     mapping(string => bool) public hasVoted;
     mapping(string => uint) public voteCount;
 
     function vote(string memory candidate, uint _age) external {
-        ageVerify(_age);
-
+        require(_age >= 18, "Not eligible to vote");
         require(!hasVoted[candidate], "You have already voted");
 
         voteCount[candidate] += 1;
@@ -15,21 +14,11 @@ contract errorHandling_vottingSystem {
 
         assert(voteCount[candidate] > 0);
     }
-
-    function ageVerify(uint _age) public pure {
-        if (_age < 18) {
-            revert("Not Eligible to Vote");
-        }
-    }
 }
 
 contract VotingExample {
-    error InsufficientAge();
-
-    error AlreadyVoted();
-
     function simulateVoting() external {
-        errorHandling_vottingSystem votingSystem = new errorHandling_vottingSystem();
+        ErrorHandlingVotingSystem votingSystem = new ErrorHandlingVotingSystem();
 
         try votingSystem.vote("Candidate1", 25) {
             // Successful vote
@@ -38,16 +27,15 @@ contract VotingExample {
         }
 
         try votingSystem.vote("Candidate2", 16) {
-            revert InsufficientAge();
+            // This will revert with the error message "Not eligible to vote"
         } catch Error(string memory errorMessage) {
             revert(errorMessage);
         }
 
         try votingSystem.vote("Candidate1", 30) {
-            revert AlreadyVoted();
+            // This will revert with the error message "You have already voted"
         } catch Error(string memory errorMessage) {
             revert(errorMessage);
         }
     }
 }
-
