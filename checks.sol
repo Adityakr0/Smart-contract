@@ -1,41 +1,58 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.10;
+pragma solidity 0.8.18;
 
-contract ErrorHandlingVotingSystem {
-    mapping(string => bool) public hasVoted;
-    mapping(string => uint) public voteCount;
-
-    function vote(string memory candidate, uint _age) external {
-        require(_age >= 18, "Not eligible to vote");
-        require(!hasVoted[candidate], "You have already voted");
-
-        voteCount[candidate] += 1;
-        hasVoted[candidate] = true;
-
-        assert(voteCount[candidate] > 0);
+contract MyToken {
+    
+    constructor() {
+        owner = msg.sender; 
     }
-}
 
-contract VotingExample {
-    function simulateVoting() external {
-        ErrorHandlingVotingSystem votingSystem = new ErrorHandlingVotingSystem();
+    // public variables here
+    string public name = "ADITYA";
+    string public symbol = "ADI";
+    uint public totalSupply = 0;
+    address public owner;
 
-        try votingSystem.vote("Candidate1", 25) {
-            // Successful vote
-        } catch Error(string memory errorMessage) {
-            revert(errorMessage);
-        }
+    //emits Events
+    event Mint(address indexed to,  uint amount);
+    event Burn(address indexed from,  uint amount);
+    event Transfer(address indexed from, address indexed to, uint amount);
 
-        try votingSystem.vote("Candidate2", 16) {
-            // This will revert with the error message "Not eligible to vote"
-        } catch Error(string memory errorMessage) {
-            revert(errorMessage);
-        }
+    //errors
+    error InsufficientBalance(uint balance, uint withdrawAmount);
 
-        try votingSystem.vote("Candidate1", 30) {
-            // This will revert with the error message "You have already voted"
-        } catch Error(string memory errorMessage) {
-            revert(errorMessage);
-        }
+    // mapping variable here
+    mapping(address => uint) public balances;
+
+    //Modifiers
+    modifier onlyOwner {
+      assert(msg.sender == owner);
+      _;
+    }
+
+    // mint function
+    function mint (address _address, uint _value) public onlyOwner{
+        totalSupply += _value;
+        balances[_address] += _value;
+        emit Mint(_address, _value);
+    }
+
+    // burn function
+  function burn (address _address, uint _value) public onlyOwner{
+      if(balances[_address] <  _value){
+        revert InsufficientBalance({balance: balances[_address], withdrawAmount: _value});
+      }else{
+        totalSupply -= _value;
+        balances[_address] -= _value;
+        emit Burn(_address, _value); 
+      }
+        
+    }
+
+    function transfer (address _reciver, uint _value ) public{
+        require(balances[msg.sender] >=  _value , "Account balance must be greater then transfered value!");
+        balances[msg.sender] -= _value;
+        balances[_reciver] += _value;
+        emit Transfer(msg.sender, _reciver, _value);
     }
 }
